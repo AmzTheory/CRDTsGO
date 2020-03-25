@@ -1,102 +1,66 @@
 package CRDTsGO
 
-
-
 //credit https://hal.inria.fr/inria-00555588/document
 
-
 import (
-		"fmt"
-		lls "github.com/emirpasic/gods/sets/linkedhashset"
-		"github.com/gofrs/uuid"
+	"fmt"
+
+	lls "github.com/emirpasic/gods/sets/linkedhashset"
+	"github.com/gofrs/uuid"
 )
 
-
-type ORSet struct{
-	s *lls.Set
+type ORSet struct {
+	items map[string]*lls.Set
 }
-type pair struct{
-	el string
+type pair struct {
+	el  string
 	tok string
 }
 
-func NewORSet() *ORSet{
+func NewORSet() *ORSet {
 
-	s:=ORSet{s:lls.New(),}
+	s := ORSet{items: make(map[string]*lls.Set)}
 	return &s
 }
 
 //add
-func (or *ORSet) AddSrc(e string) string{
-	id,_:=uuid.NewV4()
+func (or *ORSet) SrcAdd(e string) string {
+	id, _ := uuid.NewV4()
 	return id.String()
 }
-func (or *ORSet) AddDownStream( u,e string){
-	el:=pair{el:e,tok:u,}
-	or.s.Add(&el)
-}
+
 //remove
-func (or *ORSet) RemoveSrc(e string) *lls.Set{
-	R:=lls.New()
-	if or.lookup(e){
-		for _,el :=range or.s.Values(){
-			a:=el.(*pair)
-			if(a.el==e){
-				R.Add(a)
-			}
-		}
+func (or *ORSet) SrcRemove(e string) *lls.Set {
+	if or.lookup(e) {
+		return or.items[e]
 	}
-	return R
+	return nil // e doesn't exist
 }
 
-func (or *ORSet) RemoveDownStream(R *lls.Set,e string){
-	values:=R.Values()
-	//check that all pairs in R are in the set
-	cont:=true
-	for i:=0;i<len(values);i++{
-		a:=values[i].(*pair)
-		if(!or.s.Contains(a)){
-			cont=true
-			break
-		}
+func (or *ORSet) Add(u, e string) {
+	if or.items[e] == nil {
+		or.items[e] = lls.New(u)
+	} else {
+		or.items[e].Add(u)
 	}
+}
 
-	if(cont){
-		or.s.Remove(values)  //  S\R
+func (or *ORSet) Remove(R *lls.Set, e string) {
+	if or.items[e].Contains(R) { // mk sure that all of them have been added (causal order)
+		or.items[e].Remove(R) //remove elements
 	}
 }
 
 func (or *ORSet) PrintElements() {
-	temp:=lls.New()
-	for _,el :=range or.s.Values(){
-		a:=el.(pair)
-		temp.Add(a.el)
+	// temp:=lls.New()
+	fmt.Println("Current OR set\n--------------------")
+	for k, _ := range or.items {
+		fmt.Println(k)
 	}
-	//print
-	for _,el :=range temp.Values(){
-		// a:=el.(string)
-		fmt.Println(el)
-	}
-	
-	
+
 }
-
-
-
 
 //lookup
-func (or *ORSet) lookup(e string) bool{
-	for _,el :=range or.s.Values(){
-		a:=el.(pair)
-		if a.el==e{
-			return true
-		}
-	}
-	return false
-}
-
-
-//UUID
-func generateId() int{
-	return 0
+func (or *ORSet) lookup(e string) bool {
+	return or.items[e] != nil
 }
