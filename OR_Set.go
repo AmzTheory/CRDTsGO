@@ -46,26 +46,25 @@ func (or *ORSet) Add(u string, e interface{}) {
 }
 
 //remove OnSource
-func (or *ORSet) SrcRemove(e interface{}) lls.Set {
+func (or *ORSet) SrcRemove(e interface{}) []interface{} {
 	if or.lookup(e) {
-		return *(or.items[e])
+		return (or.items[e].Values())
 	}
-	return *(lls.New()) // e doesn't exist
+	return []interface{}{}// e doesn't exist
 }
 
 //local remove (include SrcRemove)
-func (or *ORSet) RemoveL(e interface{}) lls.Set {
+func (or *ORSet) RemoveL(e interface{}) []interface{} {
 	R := or.SrcRemove(e)
 	or.Remove(R, e)
 	return R
 }
 
 //remove Downstream
-func (or *ORSet) Remove(R lls.Set, e interface{}) {
+func (or *ORSet) Remove(R []interface{}, e interface{}) {
 	if containsAll(*or.items[e],R) { // mk sure that all of them have been added (causal order)
-		or.items[e].Remove(R.Values()...) //remove elements
+		or.items[e].Remove(R...) //remove elements
 		size:=or.items[e].Size()
-		fmt.Println(size,"deleted")
 		if(size==0){
 			delete(or.items,e)  //remove element 
 		}
@@ -95,8 +94,8 @@ func (or *ORSet) lookup(e interface{}) bool {
 	return or.items[e] != nil
 }
 
-func containsAll(super,sub lls.Set) bool{
-	for _,a:=range sub.Values(){
+func containsAll(super lls.Set,sub []interface{}) bool{
+	for _,a:=range sub{
 		if(!super.Contains(a)){return false}
 	}
 	return true //all elements exist
