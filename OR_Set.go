@@ -46,28 +46,27 @@ func (or *ORSet) Add(u string, e interface{}) {
 }
 
 //remove OnSource
-func (or *ORSet) SrcRemove(e interface{}) *lls.Set {
+func (or *ORSet) SrcRemove(e interface{}) lls.Set {
 	if or.lookup(e) {
-		return or.items[e]
+		return *(or.items[e])
 	}
-	return nil // e doesn't exist
+	return *(lls.New()) // e doesn't exist
 }
 
 //local remove (include SrcRemove)
-func (or *ORSet) RemoveL(e interface{}) *lls.Set {
+func (or *ORSet) RemoveL(e interface{}) lls.Set {
 	R := or.SrcRemove(e)
 	or.Remove(R, e)
 	return R
 }
 
 //remove Downstream
-func (or *ORSet) Remove(R *lls.Set, e interface{}) {
-	if containsAll(*or.items[e],*R) { // mk sure that all of them have been added (causal order)
+func (or *ORSet) Remove(R lls.Set, e interface{}) {
+	if containsAll(*or.items[e],R) { // mk sure that all of them have been added (causal order)
 		or.items[e].Remove(R.Values()...) //remove elements
 		size:=or.items[e].Size()
 		fmt.Println(size,"deleted")
 		if(size==0){
-			
 			delete(or.items,e)  //remove element 
 		}
 	}
@@ -84,6 +83,11 @@ func (or *ORSet) PrintElements() {
 	}
 	fmt.Printf("length of %d\n\n", count)
 
+}
+func (or *ORSet) Values() []interface{}{
+	keys:=[]interface{}{}
+	for k,_:=range or.items{ keys=append(keys,k)}
+	return keys
 }
 
 //lookup
