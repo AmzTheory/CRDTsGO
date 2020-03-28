@@ -13,7 +13,6 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-
 type ORSet struct {
 	items map[interface{}]*lls.Set
 }
@@ -31,7 +30,7 @@ func (or *ORSet) SrcAdd(e interface{}) string {
 
 //Add locally  (include srcAdd call)
 func (or *ORSet) AddL(e interface{}) string {
-	u := or.SrcAdd(e)  //unique token
+	u := or.SrcAdd(e) //unique token
 	or.Add(u, e)
 	return u
 }
@@ -50,24 +49,25 @@ func (or *ORSet) SrcRemove(e interface{}) []interface{} {
 	if or.lookup(e) {
 		return (or.items[e].Values())
 	}
-	return []interface{}{}// e doesn't exist
+	return []interface{}{} // e doesn't exist
 }
 
 //local remove (include SrcRemove)
 func (or *ORSet) RemoveL(e interface{}) []interface{} {
 	R := or.SrcRemove(e)
+	
 	or.Remove(R, e)
 	return R
 }
 
 //remove Downstream
 func (or *ORSet) Remove(R []interface{}, e interface{}) {
-	if containsAll(*or.items[e],R) { // mk sure that all of them have been added (causal order)
-		or.items[e].Remove(R...) //remove elements
-		size:=or.items[e].Size()
-		if(size==0){
-			delete(or.items,e)  //remove element 
-		}
+	com := intersect(*or.items[e], R)
+	or.items[e].Remove(com...) //remove elements
+	size := or.items[e].Size()
+
+	if size == 0 { //element doesnt exist anymore in the set
+		delete(or.items, e) //remove element
 	}
 }
 
@@ -83,10 +83,37 @@ func (or *ORSet) PrintElements() {
 	fmt.Printf("length of %d\n\n", count)
 
 }
-func (or *ORSet) Values() []interface{}{
-	keys:=[]interface{}{}
-	for k,_:=range or.items{ keys=append(keys,k)}
+
+//get all values in the set
+func (or *ORSet) Values() []interface{} {
+	keys := []interface{}{}
+	for k:= range or.items {
+		keys = append(keys, k)
+	}
 	return keys
+}
+
+//get all item inserted into the OR Set
+func (or *ORSet) getAllItems() []interface{} {
+	ret := []interface{}{}
+
+	// for k,v :=range or.items{
+	// 	for _,i:=range v.Values(){
+
+	// 	}
+	// }
+
+	return ret
+}
+
+//check if particluar value is in set
+func (or *ORSet) Contains(sub interface{}) bool {
+	for _, v := range or.Values() {
+		if v == sub {
+			return true
+		}
+	}
+	return false
 }
 
 //lookup
@@ -94,9 +121,12 @@ func (or *ORSet) lookup(e interface{}) bool {
 	return or.items[e] != nil
 }
 
-func containsAll(super lls.Set,sub []interface{}) bool{
-	for _,a:=range sub{
-		if(!super.Contains(a)){return false}
+func intersect(super lls.Set, sub []interface{}) []interface{} {
+	ret := []interface{}{}
+	for _, a := range sub {
+		if super.Contains(a) {
+			ret = append(ret, a)
+		}
 	}
-	return true //all elements exist
+	return ret //all elements exist
 }
