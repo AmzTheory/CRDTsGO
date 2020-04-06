@@ -9,6 +9,8 @@ credit https://hal.inria.fr/inria-00555588/document
 import (
 	"fmt"
 	// "sync"
+	"strings"
+
 	lls "github.com/emirpasic/gods/sets/linkedhashset"
 	"github.com/gofrs/uuid"
 )
@@ -55,7 +57,7 @@ func (or *ORSet) SrcRemove(e interface{}) []interface{} {
 //local remove (include SrcRemove)
 func (or *ORSet) RemoveL(e interface{}) []interface{} {
 	R := or.SrcRemove(e)
-	
+
 	or.Remove(R, e)
 	return R
 }
@@ -87,7 +89,7 @@ func (or *ORSet) PrintElements() {
 //get all values in the set
 func (or *ORSet) Values() []interface{} {
 	keys := []interface{}{}
-	for k:= range or.items {
+	for k := range or.items {
 		keys = append(keys, k)
 	}
 	return keys
@@ -97,28 +99,19 @@ func (or *ORSet) Values() []interface{} {
 func (or *ORSet) getAllItems() []interface{} {
 	ret := []interface{}{}
 
-	// for k,v :=range or.items{
-	// 	for _,i:=range v.Values(){
-
-	// 	}
-	// }
-
 	return ret
 }
 
-//check if particluar value is in set
+//check if particluar value is in OR_set  O(1)
 func (or *ORSet) Contains(sub interface{}) bool {
-	for _, v := range or.Values() {
-		if v == sub {
-			return true
-		}
-	}
-	return false
+	_, ok := or.items[sub]
+	return ok
 }
 
-//lookup
+//lookup  (redundant)
 func (or *ORSet) lookup(e interface{}) bool {
-	return or.items[e] != nil
+	_, ok := or.items[e]
+	return ok
 }
 
 func intersect(super lls.Set, sub []interface{}) []interface{} {
@@ -129,4 +122,28 @@ func intersect(super lls.Set, sub []interface{}) []interface{} {
 		}
 	}
 	return ret //all elements exist
+}
+func (or *ORSet) Equal(other *ORSet) bool {
+	for _, v := range or.Values() {
+		if !other.Contains(v) {
+			return false
+		}
+	}
+	return true
+
+}
+
+func (or *ORSet) GetTokens(el interface{}) string {
+	set, ok := or.items[el]
+	if !ok {
+		return ""
+	} //element doesn't exist , therefore it doesn't have any tokens
+	items := []string{}
+
+	it := set.Iterator()
+	for it.Next() {
+		items = append(items, fmt.Sprintf("%v", it.Value()))
+	}
+
+	return strings.Join(items, ", ")
 }
