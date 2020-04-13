@@ -64,6 +64,10 @@ func (or *ORSet) RemoveL(e interface{}) []interface{} {
 
 //remove Downstream
 func (or *ORSet) Remove(R []interface{}, e interface{}) {
+	if !or.lookup(e){
+		return	//break the function	
+	}
+
 	com := intersect(*or.items[e], R)
 	or.items[e].Remove(com...) //remove elements
 	size := or.items[e].Size()
@@ -123,6 +127,7 @@ func intersect(super lls.Set, sub []interface{}) []interface{} {
 	}
 	return ret //all elements exist
 }
+
 func (or *ORSet) Equal(other *ORSet) bool {
 	for _, v := range or.Values() {
 		if !other.Contains(v) {
@@ -130,20 +135,5 @@ func (or *ORSet) Equal(other *ORSet) bool {
 		}
 	}
 	return true
-
 }
 
-func (or *ORSet) GetTokens(el interface{}) string {
-	set, ok := or.items[el]
-	if !ok {
-		return ""
-	} //element doesn't exist , therefore it doesn't have any tokens
-	items := []string{}
-
-	it := set.Iterator()
-	for it.Next() {
-		items = append(items, fmt.Sprintf("%v", it.Value()))
-	}
-
-	return strings.Join(items, ", ")
-}
